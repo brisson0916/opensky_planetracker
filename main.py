@@ -169,11 +169,18 @@ class FlightTracker:
         states = flight_data.get('states')
         if not states:
             return None, None
+        
+        # Filter to only airborne planes
+        airborne_planes = [
+            (idx, plane) for idx, plane in enumerate(states) if not plane[TrackerConfig.OpenSkyFields.ON_GROUND]
+        ]
+        if not airborne_planes:
+            logger.warning(f"No airborne flights near you.")
+            return None, None
 
-        closest_idx = 0
-        closest_distance = float('inf')
+        closest_idx, closest_distance = 0, float('inf')
 
-        for idx, plane in enumerate(states):
+        for idx, plane in airborne_planes:
             distance_km = geodesic(
                 self.center,
                 (plane[TrackerConfig.OpenSkyFields.LATITUDE],
@@ -207,7 +214,7 @@ class FlightTracker:
             }
 
         # Return unknown values
-        logger.warning(f"Connection to adsbdb API failed (status{response.status_code})")
+        logger.error(f"Connection to adsbdb API failed (status{response.status_code})")
         return {
             key: 'unknown'
             for key in ['route_code', 'flight_number', 'airline_name',
@@ -257,7 +264,7 @@ class FlightTracker:
         flight_details = self.extract_flight_details(flight_data, closest_idx, distance)
 
         text_header, text_message = flight_details.format_summary(self.timezone)
-        print(text_message)
+        print(text_header,text_message)
 
         # Check if plane was spotted within 10 minutes (to prevent duplicate notifications)
         callsign = flight_details.callsign

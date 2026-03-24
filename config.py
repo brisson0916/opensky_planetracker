@@ -10,8 +10,8 @@ class TrackerConfig:
     """Configuration settings for the flight tracker."""
 
     # Location settings (Shenzhen/Hong Kong area)
-    lat: float = os.getenv("MY_LAT")
-    lon: float = os.getenv("MY_LON")
+    lat: float = float(os.getenv("MY_LAT"))
+    lon: float = float(os.getenv("MY_LON"))
     radius_km: float = 12.5
 
     # Logging settings
