@@ -2,6 +2,7 @@
 import json
 import logging
 import os
+import io
 import time
 from datetime import datetime, timedelta
 
@@ -10,6 +11,14 @@ from dotenv import load_dotenv
 from geopy.distance import geodesic
 from geopy.point import Point
 from timezonefinder import TimezoneFinder
+
+import folium
+from PIL import Image
+
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
 
 from config import TrackerConfig
 from models import FlightDetails
@@ -240,6 +249,8 @@ class FlightTracker:
             dest_city=route_info['dest_city'],
             dest_country=route_info['dest_country'],
             country=plane[Fields.COUNTRY] or 'Unknown',
+            longitude = plane[Fields.LONGITUDE],
+            latitude = plane[Fields.LATITUDE],
             altitude=plane[Fields.ALTITUDE],
             velocity=plane[Fields.VELOCITY],
             heading=plane[Fields.HEADING],
@@ -274,9 +285,89 @@ class FlightTracker:
 
         # Mark as seen and send notification
         self.plane_history.mark_seen(callsign)
-        self.send_discord_notification(text_header, text_message)
+        map_path= self.generate_static_map(flight_details)
+        self.send_discord_notification(text_header, text_message, map_path)
+
+    def generate_static_map(self, flight_details: FlightDetails) -> str:
+        """Generate a static PNG map showing user location and aircraft location.
+
+        Args:
+            flight_details: FlightDetails object containing aircraft position
+
+        Returns:
+            Path to the generated PNG file
+        """
+        # Calculate distance between user and aircraft
+        user_location = (self.config.lat, self.config.lon)
+        aircraft_location = (flight_details.latitude, flight_details.longitude)
+        distance_km = geodesic(user_location, aircraft_location).kilometers
+
+        # Determine zoom level based on distance
+        if distance_km < 5:
+            zoom_start = 14
+        elif distance_km < 20:
+            zoom_start = 11
+        elif distance_km < 50:
+            zoom_start = 9
+        else:
+            zoom_start = 7
+
+        # Create the map centered between user and aircraft
+        center_lat = (self.config.lat + flight_details.latitude) / 2
+        center_lon = (self.config.lon + flight_details.longitude) / 2
+
+        m = folium.Map(location=[center_lat, center_lon], zoom_start=zoom_start, height=600, width=1200)
+
+        # Add user location marker (red)
+        folium.Marker(
+            location=[self.config.lat, self.config.lon],
+            popup="Your Location",
+            icon=folium.Icon(color='red', icon='home')
+        ).add_to(m)
+
+        # Add aircraft location marker (blue)
+        folium.Marker(
+            location=[flight_details.latitude, flight_details.longitude],
+            popup=f"{flight_details.flight_number}<br>{flight_details.route_code}<br>{distance_km:.1f} km away",
+            icon=folium.Icon(color='blue', icon='plane')
+        ).add_to(m)
+
+        # Fit bounds with reduced padding for narrower viewport
+        bounds = [
+            [self.config.lat, self.config.lon],
+            [flight_details.latitude, flight_details.longitude]
+        ]
+        m.fit_bounds(bounds, padding=(20, 20), max_zoom=zoom_start)
+
+        # Save as HTML first, then convert to PNG using Selenium
+        html_path = os.path.join(self.config.log_dir, 'flight_map.html')
+        png_path = os.path.join(self.config.log_dir, 'flight_map.png')
+
+        m.save(html_path)
+
+        # Convert HTML to PNG using Selenium with headless Chrome
+        chrome_options = Options()
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--window-size=1200,600')
+
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+
+        try:
+            driver.get(f'file://{os.path.abspath(html_path)}')
+            time.sleep(3)  # Wait for map to fully render
+            driver.save_screenshot(png_path)
+        finally:
+            driver.quit()
+
+        logger.info(f"Map saved to {png_path}")
+        return png_path
+
     
-    def send_discord_notification(self, text_header: str, text_message: str) -> bool:
+    def send_discord_notification(self, text_header: str, text_message: str, map_path: str) -> bool:
         """Send notification to Discord webhook. Returns True if successful."""
         if not self.config.webhook_url:
             logger.warning("Discord webhook not configured, skipping notification")
@@ -284,6 +375,10 @@ class FlightTracker:
 
         try:
             webhook = DiscordWebhook(url=self.config.webhook_url)
+
+            with open(map_path, "rb") as f:
+                webhook.add_file(file=f.read(), filename=map_path)
+
             embed = DiscordEmbed(title=text_header, description=text_message)
             webhook.add_embed(embed)
             response = webhook.execute()
@@ -313,3 +408,4 @@ if __name__ == "__main__":
 
     # TODO:
     # - Dockerize for deployment on remote server
+    # wkhtmltoimage required for server

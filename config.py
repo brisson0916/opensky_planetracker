@@ -12,7 +12,7 @@ class TrackerConfig:
     # Location settings (Shenzhen/Hong Kong area)
     lat: float = float(os.getenv("MY_LAT"))
     lon: float = float(os.getenv("MY_LON"))
-    radius_km: float = 12.5
+    radius_km: float = 15
 
     # Logging settings
     log_dir: str = "logs"

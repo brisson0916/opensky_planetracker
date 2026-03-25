@@ -17,6 +17,8 @@ class FlightDetails:
     dest_city: str
     dest_country: str
     country: str
+    longitude: float | None
+    latitude: float | None
     altitude: float | None
     velocity: float | None
     heading: float | None
