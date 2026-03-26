@@ -156,7 +156,7 @@ class FlightTracker:
             f"&lomin={bounds['west']}&lomax={bounds['east']}"
         )
 
-        response = requests.get(url, headers=self.token_manager.headers())
+        response = requests.get(url, headers=self.token_manager.headers(), timeout=10)
         logger.info(f"Fetching flight data from OpenSky API...")
         if response.status_code == 200:
             data = response.json()
@@ -203,7 +203,7 @@ class FlightTracker:
         """Fetch route information from ADSBDB API."""
         url = f"{self.config.adsbdb_url}/40451C?callsign={callsign}"
         logger.info(f"Fetching route info for {callsign} from adsbdb API...")
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
 
         if response.status_code == 200:
             data = response.json()
@@ -341,6 +341,7 @@ class FlightTracker:
         png_path = os.path.join(self.config.log_dir, 'flight_map.png')
 
         m.save(html_path)
+        del m # delete to free the map file resources
 
         # Convert HTML to PNG using Selenium with headless Chrome
         chrome_options = Options()
