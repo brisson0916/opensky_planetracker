@@ -25,20 +25,29 @@ from discord_webhook import DiscordWebhook, DiscordEmbed
 # Load environment variables at startup
 load_dotenv()
 
-# Configure logging
+# Configure logging with rotation (5MB max per file, keep 3 backups)
 log_directory = 'logs'
 log_filename = 'flight_tracker.log'
-log_filepath = os.path.join('.',log_directory, log_filename)
+log_filepath = os.path.join('.', log_directory, log_filename)
 os.makedirs(log_directory, exist_ok=True)
 
-logging.basicConfig(
-    filename=log_filepath,
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    filemode='a',
-    datefmt='%Y-%m-%d %H:%M:%S'
+from logging.handlers import RotatingFileHandler
+
+handler = RotatingFileHandler(
+    log_filepath,
+    maxBytes=50_000_000,  # 50 MB
+    backupCount=3,        # 3 logs as backup
+    encoding='utf-8'
 )
+handler.setLevel(logging.INFO)
+handler.setFormatter(logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+))
+
 logger = logging.getLogger('flight_tracker')
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 class TokenManager:
     """Manages OpenSky API authentication tokens."""
