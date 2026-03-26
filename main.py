@@ -2,7 +2,6 @@
 import json
 import logging
 import os
-import io
 import time
 from datetime import datetime, timedelta
 
@@ -13,8 +12,6 @@ from geopy.point import Point
 from timezonefinder import TimezoneFinder
 
 import folium
-from PIL import Image
-
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -380,6 +377,7 @@ class FlightTracker:
                 webhook.add_file(file=f.read(), filename=map_path)
 
             embed = DiscordEmbed(title=text_header, description=text_message)
+            embed.set_image(url=f"attachment://{map_path}")
             webhook.add_embed(embed)
             response = webhook.execute()
 
@@ -408,4 +406,4 @@ if __name__ == "__main__":
 
     # TODO:
     # - Dockerize for deployment on remote server
-    # wkhtmltoimage required for server
+    # - Selenium required for server

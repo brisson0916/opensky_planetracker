@@ -13,3 +13,6 @@ wheels/
 # Logs
 logs/
 .DS_Store
+
+# Project documentation
+CLAUDE.md
