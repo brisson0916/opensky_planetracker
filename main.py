@@ -410,10 +410,23 @@ def get_timezone(latitude: float, longitude: float) -> str:
         timezone_str = "Asia/Hong_Kong"
     return timezone_str
 
-if __name__ == "__main__":
-    tracker = FlightTracker()
-    tracker.run()
+def timeout_handler(_signum, _frame):
+    """Kill the script if it runs longer than 25 seconds."""
+    raise SystemExit("Script execution exceeded 25 seconds, terminating...")
 
-    # TODO:
-    # - Dockerize for deployment on remote server
-    # - Selenium required for server
+if __name__ == "__main__":
+    import signal
+    signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(29) # Set timeout to 29 seconds
+
+    start_time = time.perf_counter()
+    try:
+        tracker = FlightTracker()
+        tracker.run()
+    except SystemExit as e:
+        logger.error(f"Script killed by timeout: {e}")
+        raise
+    finally:
+        signal.alarm(0)  # Cancel the alarm if we finish in time
+    end_time = time.perf_counter()
+    logger.info(f"Script run time: {(end_time - start_time):.2f} seconds")
