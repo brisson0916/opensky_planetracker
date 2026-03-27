@@ -411,8 +411,8 @@ def get_timezone(latitude: float, longitude: float) -> str:
     return timezone_str
 
 def timeout_handler(_signum, _frame):
-    """Kill the script if it runs longer than 25 seconds."""
-    raise SystemExit("Script execution exceeded 25 seconds, terminating...")
+    """Kill the script if it runs longer than 29 seconds."""
+    raise SystemExit("Script execution exceeded 29 seconds, terminating...")
 
 if __name__ == "__main__":
     import signal
