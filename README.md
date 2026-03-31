@@ -1,4 +1,4 @@
-# OpenSky Flight Tracker
+# OpenSky Flight Tracker: Your Personal Flight Radar with Discord Alerts
 
 Ever wondered what planes are flying overhead right now? 
 
@@ -15,7 +15,6 @@ It includes flight route, altitude, velocity, and a map screenshot pinpointing t
 - Sends Discord webhook notifications with flight details
 - Does not duplicate notifications for same flight within configurable time frame
 - Automated scheduling with cron (supports up to every 30 seconds)
-- Rotating log files to track all flight detections
 
 ## Dependencies
 
@@ -29,6 +28,22 @@ It includes flight route, altitude, velocity, and a map screenshot pinpointing t
 | `discord-webhook` | Discord notifications |
 | `timezonefinder` | Timezone lookup |
 | `python-dotenv` | Environment variable loading |
+
+
+## Project Structure
+
+```
+opensky_planetracker/
+├── main.py           # Main entry point
+├── config.py         # Configuration (location, radius, etc.)
+├── models.py         # Data models and formatting
+├── .env              # Environment variables (credentials)
+├── .venv/            # Virtual environment (created by uv)
+├── logs/             # Runtime logs
+│   ├── flight_tracker.log
+│   └── spotted_planes.json  # Deduplication cache
+└── pyproject.toml    # Dependencies
+```
 
 ## Prerequisites
 
@@ -51,8 +66,6 @@ sudo apt update && sudo apt install -y google-chrome-stable
 ```bash
 brew install --cask google-chrome
 ```
-
----
 
 ## Getting Your OpenSky API Keys
 
@@ -104,7 +117,7 @@ https://discord.com/api/webhooks/1234567890/abcdefghijklmnop
 
 Assign the entire URL to `WEBHOOK_URL`.
 
-## Setup
+## Setting up the Python Environment and Script
 
 ### 1. Clone the repository
 
@@ -209,44 +222,3 @@ To grant cron Full Disk Access:
 Or alternatively, use `launchd` as a more macOS-native scheduler.
 
 ---
-
-## Cron Log Output
-
-The `>>` redirects both stdout and stderr to `logs/cron.log`. To watch the log in real time during testing:
-
-```bash
-tail -f logs/cron.log
-```
-
----
-
-## Project Structure
-
-```
-opensky_planetracker/
-├── main.py           # Main entry point
-├── config.py         # Configuration (location, radius, etc.)
-├── models.py         # Data models
-├── .env              # Environment variables (credentials)
-├── .venv/            # Virtual environment (created by uv)
-├── logs/             # Runtime logs
-│   ├── flight_tracker.log
-│   └── spotted_planes.json  # Deduplication cache
-└── pyproject.toml    # Dependencies
-```
-
----
-
-## Troubleshooting
-
-### "Chrome not found" / Selenium error
-
-Ensure Chrome is installed and `chromedriver` can be found. The script uses `webdriver-manager` to auto-install it, but Chrome itself must be on your system.
-
-On headless Linux servers, the `--no-sandbox` and `--disable-dev-shm-usage` flags are enabled by default in the script.
-
-### Cron not running
-
-- Check cron is running: `sudo systemctl status cron` (Linux)
-- Verify paths are absolute in crontab
-- Check the log file for errors: `tail -f logs/cron.log`
