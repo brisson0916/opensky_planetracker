@@ -1,6 +1,10 @@
 # OpenSky Flight Tracker
 
-Tracks nearby flights using the OpenSky Network API and sends Discord notifications with a map screenshot.
+Ever wondered what planes are flying overhead right now? 
+
+The OpenSky Flight Tracker monitors airspace around your location using the OpenSky Network API and sends real-time Discord notifications whenever a flight passes by.
+
+It includes flight route, altitude, velocity, and a map screenshot pinpointing the aircraft, just like the screenshot below:
 ![Alt text](./media/sample_screenshot.png)
 
 ## Features
@@ -10,6 +14,21 @@ Tracks nearby flights using the OpenSky Network API and sends Discord notificati
 - Generates a static map image
 - Sends Discord webhook notifications with flight details
 - Does not duplicate notifications for same flight within configurable time frame
+- Automated scheduling with cron (supports up to every 30 seconds)
+- Rotating log files to track all flight detections
+
+## Dependencies
+
+| Package | Purpose |
+|---------|---------|
+| `selenium` | Browser automation for map screenshots |
+| `webdriver-manager` | Auto-installs chromedriver |
+| `folium` | Map generation |
+| `geopy` | Distance calculations |
+| `requests` | OpenSky & ADSBDB API calls |
+| `discord-webhook` | Discord notifications |
+| `timezonefinder` | Timezone lookup |
+| `python-dotenv` | Environment variable loading |
 
 ## Prerequisites
 
@@ -119,7 +138,7 @@ CLIENT_SECRET="your-opensky-client-secret"
 WEBHOOK_URL="https://discord.com/api/webhooks/..."
 MY_LAT="xxx.xxx"        # Your latitude
 MY_LON="yyy.yyy"       # Your longitude
-RADIUS_KM="5"           # Radius of detecting planes around the coordiates (KM)
+RADIUS_KM="5"           # Search radius for nearby flights (KM)
 ```
 
 ### 5. Test the script
@@ -155,13 +174,23 @@ And a Discord notification with a map.
 crontab -e
 ```
 
-**2. Add the following line to run every minute:**
+**2. Add one of the following configurations:**
 
+**Every minute:**
 ```cron
-* * * * * /full/path/to/opensky_planetracker/.venv/bin/python /full/path/to/opensky_planetracker/main.py >> /full/path/to/opensky_planetracker/logs/cron.log 2>&1
+* * * * * cd "/full/path/to/opensky_planetracker" && /full/path/to/uv run python main.py
 ```
 
-> **Important:** Use absolute paths. Cron runs with a minimal environment and won't find `.venv/bin/python` or relative paths.
+**Every 30 seconds** (two entries):
+```cron
+* * * * * cd "/full/path/to/opensky_planetracker" && /full/path/to/uv run python main.py
+* * * * * sleep 30 && cd "/full/path/to/opensky_planetracker" && /full/path/to/uv run python main.py
+```
+
+> **Important:**
+> - Use absolute paths. Cron runs with a minimal environment and won't find `uv` or relative paths.
+> - Run `which uv` in terminal to get the full path to `uv` (e.g., `/opt/homebrew/bin/uv`).
+> - Paths with spaces must be quoted.
 
 **3. Verify your crontab:**
 
@@ -205,21 +234,6 @@ opensky_planetracker/
 │   └── spotted_planes.json  # Deduplication cache
 └── pyproject.toml    # Dependencies
 ```
-
----
-
-## Dependencies
-
-| Package | Purpose |
-|---------|---------|
-| `selenium` | Browser automation for map screenshots |
-| `webdriver-manager` | Auto-installs chromedriver |
-| `folium` | Map generation |
-| `geopy` | Distance calculations |
-| `requests` | OpenSky & ADSBDB API calls |
-| `discord-webhook` | Discord notifications |
-| `timezonefinder` | Timezone lookup |
-| `python-dotenv` | Environment variable loading |
 
 ---
 
