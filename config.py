@@ -9,10 +9,10 @@ load_dotenv()
 class TrackerConfig:
     """Configuration settings for the flight tracker."""
 
-    # Location settings (Shenzhen/Hong Kong area)
+    # Location settings
     lat: float = float(os.getenv("MY_LAT"))
     lon: float = float(os.getenv("MY_LON"))
-    radius_km: float = 15
+    radius_km: float = float(os.getenv("RADIUS_KM"))
 
     # Logging settings
     log_dir: str = "logs"

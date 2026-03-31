@@ -1,15 +1,15 @@
 # OpenSky Flight Tracker
 
 Tracks nearby flights using the OpenSky Network API and sends Discord notifications with a map screenshot.
+![Alt text](./media/sample_screenshot.png)
 
 ## Features
 
-- Fetches real-time flight data within a configurable radius
-- Calculates closest airborne flight to your location
-- Generates a static map image using Selenium + headless Chrome
+- Fetches closest airborne flight to your location within a configurable radius
+- Real-time flight data about flight route, altitude, velocity, direction, etc.
+- Generates a static map image
 - Sends Discord webhook notifications with flight details
-- Deduplicates notifications within a configurable TTL
-- 29-second execution timeout for cron safety
+- Does not duplicate notifications for same flight within configurable time frame
 
 ## Prerequisites
 
@@ -17,11 +17,9 @@ Tracks nearby flights using the OpenSky Network API and sends Discord notificati
 - **Chrome** or **Chromium** installed (required for Selenium map generation)
 - `chromedriver` compatible with your Chrome version (auto-installed by webdriver-manager)
 
-### Installing Chrome on Linux (EC2)
+### Installing Chrome on Linux
 
 ```bash
-# Amazon Linux 2023 / RHEL
-sudo dnf install -y google-chrome-stable
 
 # Ubuntu/Debian
 wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
@@ -65,7 +63,7 @@ Your credentials will look something like:
 
 ## Setting Up a Discord Webhook
 
-Discord webhooks let this script send notifications to a channel without a bot.
+Discord webhooks let this script send notifications to a channel.
 
 **1. Create a Discord channel** (or use an existing one)
 
@@ -86,8 +84,6 @@ https://discord.com/api/webhooks/1234567890/abcdefghijklmnop
 **3. Use the full webhook URL in your `.env` file**
 
 Assign the entire URL to `WEBHOOK_URL`.
-
----
 
 ## Setup
 
@@ -115,13 +111,7 @@ This installs all packages including `selenium`, `webdriver-manager`, `folium`, 
 
 ### 4. Configure environment variables
 
-Copy the example file and fill in your credentials:
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env`:
+Create an `.env` file and edit it as below:
 
 ```bash
 CLIENT_ID="your-opensky-client-id"
@@ -129,6 +119,7 @@ CLIENT_SECRET="your-opensky-client-secret"
 WEBHOOK_URL="https://discord.com/api/webhooks/..."
 MY_LAT="xxx.xxx"        # Your latitude
 MY_LON="yyy.yyy"       # Your longitude
+RADIUS_KM="5"           # Radius of detecting planes around the coordiates (KM)
 ```
 
 ### 5. Test the script
@@ -140,16 +131,23 @@ uv run python main.py
 You should see output like:
 
 ```
-Flight: CPA472 | HKG → JFK | 285km away
+Plane Spotted 3.7km away! (2026-03-31 16:47:17+08:00) 
+Flight: UO851
+Route: KIX-HKG
+State of Registry: China
+Altitude: 906.8 meters
+Velocity: 299.9 km/h (heading S 70.9° W)
+Climb Rate: -6.5 m/s
+
+This is Hong Kong Express Airways's flight UO851 from Osaka, Japan to Hong Kong, Hong Kong.
+Track it: https://www.flightradar24.com/HKE851  
 ```
 
 And a Discord notification with a map.
 
 ---
 
-## Running on a Schedule with Cron
-
-### Linux / EC2
+## Running on a Schedule with Cron (MacOS/Linux)
 
 **1. Open the crontab editor:**
 
@@ -171,9 +169,9 @@ crontab -e
 crontab -l
 ```
 
-### Mac
+### Note
 
-Same as Linux, but be aware that **macOS may require additional permissions** for cron to run scripts.
+Be aware that **macOS may require additional permissions** for cron to run scripts.
 
 To grant cron Full Disk Access:
 1. Go to **System Settings → Privacy & Security → Full Disk Access**
@@ -238,7 +236,3 @@ On headless Linux servers, the `--no-sandbox` and `--disable-dev-shm-usage` flag
 - Check cron is running: `sudo systemctl status cron` (Linux)
 - Verify paths are absolute in crontab
 - Check the log file for errors: `tail -f logs/cron.log`
-
-### Script times out
-
-The script has a 29-second timeout to prevent cron overlap. If your internet is slow, increase the timeout in `main.py` (`signal.alarm(29)`).

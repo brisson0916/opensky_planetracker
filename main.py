@@ -309,11 +309,13 @@ class FlightTracker:
         distance_km = geodesic(user_location, aircraft_location).kilometers
 
         # Determine zoom level based on distance
-        if distance_km < 5:
-            zoom_start = 14
-        elif distance_km < 20:
+        if distance_km <= 4:
+            zoom_start = 13
+        elif distance_km <= 9:
+            zoom_start = 12
+        elif distance_km <= 20:
             zoom_start = 11
-        elif distance_km < 50:
+        elif distance_km <= 50:
             zoom_start = 9
         else:
             zoom_start = 7
